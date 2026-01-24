@@ -94,7 +94,7 @@ int main() {
 
     SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO);
 
-    SDL_Window* wnd = SDL_CreateWindow("SNEK", 1280, 720, NULL);
+    SDL_Window* wnd = SDL_CreateWindow("SNEK", 1280, 720, (SDL_WindowFlags)NULL);
     mapSize.width = 64;
     mapSize.height = 36;
     snek = malloc(sizeof(struct SnekPiece) * mapSize.width * mapSize.height);
