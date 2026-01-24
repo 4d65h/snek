@@ -88,7 +88,7 @@ void movePlayer() {
     }
 }
 
-int WinMain() {
+int main() {
 
     uint64_t lastMoveTime = 0;
 
@@ -189,3 +189,5 @@ int WinMain() {
 
     return 0;
 }
+//WIN32 Compatibility entrypoint
+int WinMain() { return main();}
