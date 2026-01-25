@@ -14,13 +14,9 @@ uint32_t snekLength = 1;
 struct SnekPiece* snek;
 enum SnekDirection snekDirection = SNEK_RIGHT;
 struct MapSize mapSize;
-size_t max_score = 0;
 
 bool* appleMap;
 bool* playerColisionMap;
-
-float refreshRate = 165;
-float snekSpeed;
 
 void keyHandler(SDL_KeyboardEvent* key_event) {
     switch (key_event->key) {
@@ -109,9 +105,6 @@ int main() {
 
     populateFruit(10);
 
-    int snekDelay = 1000 / refreshRate;
-    snekSpeed = 10.f / refreshRate;
-
     SDL_Renderer* renderer = SDL_CreateRenderer(wnd, NULL);
     SDL_SetRenderVSync(renderer, 1);
     //main loop
@@ -150,15 +143,18 @@ int main() {
                 }
             }
         }
-
+	
+	//render text
         SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
         SDL_SetRenderScale(renderer, 2.0f, 2.0f);
         SDL_RenderDebugTextFormat(renderer, 1, 1, "Snek v%.1f", version);
         SDL_RenderDebugTextFormat(renderer, 1, 11, "Length %d", snekLength);
-
+	
+	//game logic
         uint64_t currentTime = SDL_GetTicks();
         if (currentTime - 50 >= lastMoveTime) {
             movePlayer();
+	    //eat fruit
             if (appleMap[(int)snek[0].x * mapSize.height + (int)snek[0].y]) {
                 snekLength++;
                 snek[snekLength - 1] = snek[snekLength - 2];
