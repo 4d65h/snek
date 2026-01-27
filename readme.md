@@ -5,5 +5,6 @@ Snake game made with SDL3
 ### Tested
 - Windows
 - Linux
+- Emscripten
 ### Untested
 - Anything with a keyboard and SDL3 support (Will add gamepad support soon)

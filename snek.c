@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 const double version = 0.1;
 bool isRunning = true;
@@ -84,13 +87,96 @@ void movePlayer() {
     }
 }
 
+SDL_Window* wnd;
+SDL_Renderer* renderer;
+uint64_t lastMoveTime = 0;
+
+void mainLoop() {
+    if (!isRunning){	
+        SDL_Quit();
+        #ifdef __EMSCRIPTEN__
+	emscripten_cancel_main_loop();
+	#else 
+	exit(0);
+        #endif
+    }
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_EVENT_QUIT:
+                isRunning = false;
+                break;
+            case SDL_EVENT_KEY_DOWN:
+                keyHandler(&event.key);
+                break;
+        }
+    }
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    SDL_SetRenderScale(renderer, 20.0f, 20.0f);
+    SDL_FRect rect = {0, 0, 1, 1};
+    //render snek
+    for (int i = 0; i < snekLength; i++) {
+        rect.x = snek[i].x;
+        rect.y = snek[i].y;
+        SDL_RenderFillRect(renderer, &rect);
+    }
+    //render apple
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
+    for (int i = 0; i <= mapSize.width; i++) {
+        for (int j = 0; j <= mapSize.height; j++) {
+            if (appleMap[i * mapSize.height + j]) {
+                rect.x = i;
+                rect.y = j;
+                SDL_RenderFillRect(renderer, &rect);
+            }
+        }
+    }
+	
+    //render text
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    SDL_SetRenderScale(renderer, 2.0f, 2.0f);
+    SDL_RenderDebugTextFormat(renderer, 1, 1, "Snek v%.1f", version);
+    SDL_RenderDebugTextFormat(renderer, 1, 11, "Length %d", snekLength);
+
+    //game logic
+    uint64_t currentTime = SDL_GetTicks();
+    if (currentTime - 50 >= lastMoveTime) {
+        movePlayer();
+    //eat fruit
+        if (appleMap[(int)snek[0].x * mapSize.height + (int)snek[0].y]) {
+            snekLength++;
+            snek[snekLength - 1] = snek[snekLength - 2];
+            switch (snekDirection) {
+                case SNEK_UP:
+                    snek[snekLength - 1].y -= 1.0;
+                    break;
+                case SNEK_DOWN:
+                    snek[snekLength - 1].y += 1.0;
+                    break;
+                case SNEK_LEFT:
+                    snek[snekLength - 1].x -= 1.0;
+                    break;
+                case SNEK_RIGHT:
+                    snek[snekLength - 1].x += 1.0;
+                    break;
+            }
+            appleMap[(int)snek[0].x * mapSize.height + (int)snek[0].y] = false;
+            appleMap[(rand()%mapSize.width) * mapSize.height + (rand()%mapSize.height)] = true;
+        }
+        lastMoveTime = currentTime;
+    }
+
+    SDL_RenderPresent(renderer);
+
+}
+
 int main() {
-
-    uint64_t lastMoveTime = 0;
-
     SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO);
 
-    SDL_Window* wnd = SDL_CreateWindow("SNEK", 1280, 720, (SDL_WindowFlags)NULL);
+    wnd = SDL_CreateWindow("SNEK", 1280, 720, (SDL_WindowFlags)NULL);
     mapSize.width = 64;
     mapSize.height = 36;
     snek = malloc(sizeof(struct SnekPiece) * mapSize.width * mapSize.height);
@@ -105,83 +191,16 @@ int main() {
 
     populateFruit(10);
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(wnd, NULL);
+    renderer = SDL_CreateRenderer(wnd, NULL);
     SDL_SetRenderVSync(renderer, 1);
     //main loop
+    #ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(mainLoop, 0, 1);
+    #else
     while (isRunning) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_EVENT_QUIT:
-                    isRunning = false;
-                    break;
-                case SDL_EVENT_KEY_DOWN:
-                    keyHandler(&event.key);
-                    break;
-            }
-        }
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-        SDL_RenderClear(renderer);
-
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_SetRenderScale(renderer, 20.0f, 20.0f);
-        SDL_FRect rect = {0, 0, 1, 1};
-        //render snek
-        for (int i = 0; i < snekLength; i++) {
-            rect.x = snek[i].x;
-            rect.y = snek[i].y;
-            SDL_RenderFillRect(renderer, &rect);
-        }
-        //render apple
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0xFF);
-        for (int i = 0; i <= mapSize.width; i++) {
-            for (int j = 0; j <= mapSize.height; j++) {
-                if (appleMap[i * mapSize.height + j]) {
-                    rect.x = i;
-                    rect.y = j;
-                    SDL_RenderFillRect(renderer, &rect);
-                }
-            }
-        }
-	
-	//render text
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_SetRenderScale(renderer, 2.0f, 2.0f);
-        SDL_RenderDebugTextFormat(renderer, 1, 1, "Snek v%.1f", version);
-        SDL_RenderDebugTextFormat(renderer, 1, 11, "Length %d", snekLength);
-	
-	//game logic
-        uint64_t currentTime = SDL_GetTicks();
-        if (currentTime - 50 >= lastMoveTime) {
-            movePlayer();
-	    //eat fruit
-            if (appleMap[(int)snek[0].x * mapSize.height + (int)snek[0].y]) {
-                snekLength++;
-                snek[snekLength - 1] = snek[snekLength - 2];
-                switch (snekDirection) {
-                    case SNEK_UP:
-                        snek[snekLength - 1].y -= 1.0;
-                        break;
-                    case SNEK_DOWN:
-                        snek[snekLength - 1].y += 1.0;
-                        break;
-                    case SNEK_LEFT:
-                        snek[snekLength - 1].x -= 1.0;
-                        break;
-                    case SNEK_RIGHT:
-                        snek[snekLength - 1].x += 1.0;
-                        break;
-                }
-                appleMap[(int)snek[0].x * mapSize.height + (int)snek[0].y] = false;
-                appleMap[(rand()%mapSize.width) * mapSize.height + (rand()%mapSize.height)] = true;
-            }
-            lastMoveTime = currentTime;
-        }
-
-        SDL_RenderPresent(renderer);
+	mainLoop();
     }
-
-    SDL_Quit();
+    #endif
 
     return 0;
 }
