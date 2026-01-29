@@ -6,15 +6,15 @@ project(snek)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+option(SNEK_USE_SYSTEM_SDL3 "Use system SDL3" OFF)
+
 # This assumes the SDL source is available in submodules/SDL
-message("${CMAKE_SYSTEM_NAME}")
-if (CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
-    message("Building with SDL3-Switch")
-    add_subdirectory(submodules/SDL3-NX EXCLUDE_FROM_ALL)
+message("Building on ${CMAKE_SYSTEM_NAME}")
+if(SNEK_USE_SYSTEM_SDL3)
+    find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 else()
-    message("Building with SDL3")
     add_subdirectory(submodules/SDL EXCLUDE_FROM_ALL)
-endif ()
+endif()
 
 # Create your game executable target as usual
 add_executable(snek WIN32 snek.c)

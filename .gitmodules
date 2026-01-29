@@ -2,6 +2,3 @@
 	path = submodules/SDL
 	url = https://github.com/libsdl-org/SDL.git
 	branch = release-3.4.x
-[submodule "submodules/SDL3-NX"]
-	path = submodules/SDL3-NX
-	url = https://github.com/SnepOMatic/SDL3-Switch.git
